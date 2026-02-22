@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dance Competition · March 2026</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1f1f1f;
+      --border: #2a2a2a;
+      --text: #f0f0f0;
+      --muted: #666;
+      --aubree: #c084fc;
+      --nelly: #67e8f9;
+      --winnie: #fbbf24;
+      --group: #86efac;
+      --radius: 10px;
+      --transition: 0.18s ease;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 32px 20px 64px;
+    }
+
+    header {
+      max-width: 760px;
+      margin: 0 auto 40px;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-top: 4px;
+    }
+
+    /* ── Filters ── */
+    .filters {
+      max-width: 760px;
+      margin: 0 auto 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      width: 68px;
+      flex-shrink: 0;
+    }
+
+    .filter-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.8rem;
+      padding: 5px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .chip:hover { border-color: #444; color: var(--text); }
+
+    .chip.active {
+      color: #000;
+      border-color: transparent;
+    }
+
+    .chip[data-dancer="aubree"].active  { background: var(--aubree); }
+    .chip[data-dancer="nelly"].active   { background: var(--nelly); }
+    .chip[data-dancer="winnie"].active  { background: var(--winnie); }
+    .chip[data-dancer="all"].active     { background: #fff; color: #000; }
+
+    .chip[data-scope].active            { background: #fff; color: #000; }
+
+    /* ── Stats bar ── */
+    .stats {
+      max-width: 760px;
+      margin: 0 auto 28px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Content ── */
+    .content { max-width: 760px; margin: 0 auto; }
+
+    /* ── Weekend block ── */
+    .weekend {
+      margin-bottom: 40px;
+    }
+
+    .weekend-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+
+    /* ── Day block ── */
+    .day {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .day-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: background var(--transition);
+    }
+
+    .day-header:hover { background: var(--surface2); }
+
+    .day-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .day-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .day-count {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .day-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .dot-aubree { background: var(--aubree); }
+    .dot-nelly  { background: var(--nelly); }
+    .dot-winnie { background: var(--winnie); }
+
+    .day-toggle {
+      color: var(--muted);
+      font-size: 0.7rem;
+      transition: transform var(--transition);
+    }
+
+    .day.open .day-toggle { transform: rotate(180deg); }
+
+    /* ── Entry list ── */
+    .entry-list {
+      padding: 0 18px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .day.open .entry-list { display: flex; }
+
+    .entry {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 7px;
+      background: var(--surface2);
+      border-left: 3px solid transparent;
+      transition: opacity var(--transition), transform var(--transition);
+    }
+
+    .entry.hidden { display: none; }
+
+    .entry[data-dancer="aubree"] { border-color: var(--aubree); }
+    .entry[data-dancer="nelly"]  { border-color: var(--nelly); }
+    .entry[data-dancer="winnie"] { border-color: var(--winnie); }
+    .entry[data-dancer="group"]  { border-color: var(--group); }
+
+    .entry-time {
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-width: 52px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .entry-dancer {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 52px;
+    }
+
+    .entry[data-dancer="aubree"] .entry-dancer { color: var(--aubree); }
+    .entry[data-dancer="nelly"]  .entry-dancer { color: var(--nelly); }
+    .entry[data-dancer="winnie"] .entry-dancer { color: var(--winnie); }
+    .entry[data-dancer="group"]  .entry-dancer { color: var(--group); }
+
+    .entry-desc {
+      font-size: 0.875rem;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .entry-flag {
+      font-size: 0.65rem;
+      color: #f97316;
+      background: rgba(249,115,22,0.12);
+      border: 1px solid rgba(249,115,22,0.25);
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.875rem;
+      padding: 48px 0;
+      display: none;
+    }
+
+    .empty.visible { display: block; }
+
+    /* ── Legend ── */
+    .legend {
+      max-width: 760px;
+      margin: 48px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    @media (max-width: 500px) {
+      .filter-label { width: auto; }
+      .filter-group { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Dance Competition</h1>
+  <p>March 2026 · 3 weekends</p>
+</header>
+
+<div class="filters">
+  <div class="filter-group">
+    <span class="filter-label">Dancer</span>
+    <div class="filter-chips" id="dancer-chips">
+      <button class="chip active" data-dancer="all">All</button>
+      <button class="chip" data-dancer="aubree">Aubree</button>
+      <button class="chip" data-dancer="nelly">Nelly</button>
+      <button class="chip" data-dancer="winnie">Winnie</button>
+    </div>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Weekend</span>
+    <div class="filter-chips" id="scope-chips">
+      <button class="chip active" data-scope="all">All</button>
+      <button class="chip" data-scope="w1">7–8 Mar</button>
+      <button class="chip" data-scope="w2">14–15 Mar</button>
+      <button class="chip" data-scope="w3">21–22 Mar</button>
+    </div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <span class="stat-value" id="stat-total">—</span>
+    <span class="stat-label">Performances</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value" style="color:var(--aubree)" id="stat-aubree">—</span>
+    <span class="stat-label">Aubree</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value" style="color:var(--nelly)" id="stat-nelly">—</span>
+    <span class="stat-label">Nelly</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value" style="color:var(--winnie)" id="stat-winnie">—</span>
+    <span class="stat-label">Winnie</span>
+  </div>
+</div>
+
+<div class="content" id="content"></div>
+<div class="empty" id="empty">No performances match this filter.</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot" style="background:var(--aubree)"></span>Aubree</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--nelly)"></span>Nelly</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--winnie)"></span>Winnie</div>
+  <div class="legend-item"><span class="legend-dot" style="background:var(--group)"></span>Group</div>
+  <div class="legend-item"><span style="font-size:0.75rem;color:#f97316">⚑</span>&nbsp;Pending confirmation</div>
+</div>
+
+<script>
+  const schedule = [
+    // Weekend 1
+    { weekend: "w1", day: "Saturday 7 March", dancer: "aubree", time: "9:50am",  desc: "Tap Solo" },
+    { weekend: "w1", day: "Saturday 7 March", dancer: "aubree", time: "11:40am", desc: "Lyrical Solo" },
+    { weekend: "w1", day: "Saturday 7 March", dancer: "nelly",  time: "12:25pm", desc: "Duet with Riley" },
+    { weekend: "w1", day: "Saturday 7 March", dancer: "winnie", time: "1:55pm",  desc: "Character" },
+    { weekend: "w1", day: "Saturday 7 March", dancer: "aubree", time: "3:25pm",  desc: "Modern Solo" },
+
+    { weekend: "w1", day: "Sunday 8 March",   dancer: "nelly",  time: "9:50am",  desc: "Tap Solo" },
+    { weekend: "w1", day: "Sunday 8 March",   dancer: "aubree", time: "6:15pm",  desc: "Group" },
+
+    // Weekend 2
+    { weekend: "w2", day: "Saturday 14 March", dancer: "aubree", time: "3:55pm", desc: "Tap Trio", flag: "Pending confirmation" },
+
+    { weekend: "w2", day: "Sunday 15 March",  dancer: "nelly",  time: "9:00am",  desc: "Lyrical Solo" },
+    { weekend: "w2", day: "Sunday 15 March",  dancer: "aubree", time: "10:00am", desc: "Lyrical Trio" },
+    { weekend: "w2", day: "Sunday 15 March",  dancer: "nelly",  time: "11:40am", desc: "Modern Solo" },
+    { weekend: "w2", day: "Sunday 15 March",  dancer: "nelly",  time: "12:30pm", desc: "Duet with Catherine" },
+    { weekend: "w2", day: "Sunday 15 March",  dancer: "aubree", time: "4:00pm",  desc: "Tap Duet with Zara" },
+
+    // Weekend 3
+    { weekend: "w3", day: "Saturday 21 March", dancer: "winnie", time: "10:30am", desc: "Modern" },
+    { weekend: "w3", day: "Saturday 21 March", dancer: "aubree", time: "3:50pm",  desc: "Modern Duet with Zara" },
+
+    { weekend: "w3", day: "Sunday 22 March",   dancer: "nelly",  time: "10:10am", desc: "Tap Trio" },
+    { weekend: "w3", day: "Sunday 22 March",   dancer: "winnie", time: "10:25am", desc: "Group Mini" },
+    { weekend: "w3", day: "Sunday 22 March",   dancer: "group",  time: "1:40pm",  desc: "Junior Groups" },
+  ];
+
+  const weekendLabels = { w1: "Weekend 1 · 7–8 March", w2: "Weekend 2 · 14–15 March", w3: "Weekend 3 · 21–22 March" };
+
+  let activeDancer = "all";
+  let activeScope  = "all";
+
+  function buildUI() {
+    const content = document.getElementById("content");
+    content.innerHTML = "";
+
+    // Group by weekend → day
+    const weekends = {};
+    for (const e of schedule) {
+      if (!weekends[e.weekend]) weekends[e.weekend] = {};
+      if (!weekends[e.weekend][e.day]) weekends[e.weekend][e.day] = [];
+      weekends[e.weekend][e.day].push(e);
+    }
+
+    for (const [wk, days] of Object.entries(weekends)) {
+      const wDiv = document.createElement("div");
+      wDiv.className = "weekend";
+      wDiv.dataset.weekend = wk;
+
+      const wTitle = document.createElement("div");
+      wTitle.className = "weekend-title";
+      wTitle.textContent = weekendLabels[wk];
+      wDiv.appendChild(wTitle);
+
+      for (const [dayName, entries] of Object.entries(days)) {
+        const dayDiv = document.createElement("div");
+        dayDiv.className = "day open";
+        dayDiv.dataset.day = dayName;
+
+        // Dots
+        const dancers = [...new Set(entries.map(e => e.dancer))];
+        const dotHtml = dancers.filter(d => d !== "group").map(d =>
+          `<span class="dot dot-${d}"></span>`
+        ).join("");
+
+        dayDiv.innerHTML = `
+          <div class="day-header">
+            <span class="day-name">${dayName}</span>
+            <div class="day-meta">
+              <div class="day-dots">${dotHtml}</div>
+              <span class="day-count" data-count></span>
+              <span class="day-toggle">▼</span>
+            </div>
+          </div>
+          <div class="entry-list"></div>
+        `;
+
+        dayDiv.querySelector(".day-header").addEventListener("click", () => {
+          dayDiv.classList.toggle("open");
+        });
+
+        const list = dayDiv.querySelector(".entry-list");
+        for (const e of entries) {
+          const row = document.createElement("div");
+          row.className = "entry";
+          row.dataset.dancer = e.dancer;
+          row.dataset.weekend = e.weekend;
+          row.innerHTML = `
+            <span class="entry-time">${e.time}</span>
+            <span class="entry-dancer">${e.dancer === "group" ? "Group" : e.dancer.charAt(0).toUpperCase() + e.dancer.slice(1)}</span>
+            <span class="entry-desc">${e.desc}</span>
+            ${e.flag ? `<span class="entry-flag">⚑ ${e.flag}</span>` : ""}
+          `;
+          list.appendChild(row);
+        }
+
+        wDiv.appendChild(dayDiv);
+      }
+
+      content.appendChild(wDiv);
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const entries = document.querySelectorAll(".entry");
+    const days    = document.querySelectorAll(".day");
+    const weekends = document.querySelectorAll(".weekend");
+    const empty   = document.getElementById("empty");
+
+    let totalVisible = 0, aCount = 0, nCount = 0, wCount = 0;
+
+    for (const e of entries) {
+      const matchDancer  = activeDancer === "all" || e.dataset.dancer === activeDancer;
+      const matchWeekend = activeScope  === "all" || e.dataset.weekend === activeScope;
+      const visible = matchDancer && matchWeekend;
+      e.classList.toggle("hidden", !visible);
+      if (visible) {
+        totalVisible++;
+        if (e.dataset.dancer === "aubree") aCount++;
+        if (e.dataset.dancer === "nelly")  nCount++;
+        if (e.dataset.dancer === "winnie") wCount++;
+      }
+    }
+
+    // Update day count badges and hide empty days
+    for (const d of days) {
+      const vis = d.querySelectorAll(".entry:not(.hidden)").length;
+      d.querySelector("[data-count]").textContent = vis + (vis === 1 ? " performance" : " performances");
+      d.style.display = vis === 0 ? "none" : "";
+    }
+
+    // Hide empty weekends
+    for (const w of weekends) {
+      const vis = w.querySelectorAll(".entry:not(.hidden)").length;
+      w.style.display = vis === 0 ? "none" : "";
+    }
+
+    document.getElementById("stat-total").textContent  = totalVisible;
+    document.getElementById("stat-aubree").textContent = aCount;
+    document.getElementById("stat-nelly").textContent  = nCount;
+    document.getElementById("stat-winnie").textContent = wCount;
+
+    empty.classList.toggle("visible", totalVisible === 0);
+  }
+
+  // Dancer chips
+  document.getElementById("dancer-chips").addEventListener("click", e => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    document.querySelectorAll("#dancer-chips .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    activeDancer = chip.dataset.dancer;
+    applyFilter();
+  });
+
+  // Scope chips
+  document.getElementById("scope-chips").addEventListener("click", e => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    document.querySelectorAll("#scope-chips .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    activeScope = chip.dataset.scope;
+    applyFilter();
+  });
+
+  buildUI();
+</script>
+</body>
+</html>
