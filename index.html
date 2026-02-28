@@ -106,8 +106,51 @@
     .chip[data-dancer="hallie"].active  { background: var(--hallie); }
     .chip[data-dancer="ryleigh"].active { background: var(--ryleigh); }
     .chip[data-dancer="all"].active     { background: #fff; color: #000; }
+    .chip[data-dancer].dimmed           { opacity: 0.3; pointer-events: none; }
 
     .chip[data-scope].active            { background: #fff; color: #000; }
+
+    /* ── Family filter ── */
+    .family-filter {
+      max-width: 760px;
+      margin: 0 auto 20px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .family-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .family-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 7px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+      letter-spacing: 0.2px;
+    }
+
+    .family-chip:hover { border-color: #555; color: var(--text); }
+
+    .family-chip.active {
+      background: #fff;
+      color: #000;
+      border-color: transparent;
+    }
+
+    .family-chip[data-family="leah"].active  { background: #e879f9; color: #000; }
+    .family-chip[data-family="jemma"].active { background: #38bdf8; color: #000; }
 
     /* ── Stats bar ── */
     .stats {
@@ -333,6 +376,13 @@
   <p>March 2026 · 3 weekends</p>
 </header>
 
+<div class="family-filter" id="family-chips">
+  <span class="family-label">Family</span>
+  <button class="family-chip active" data-family="all">All</button>
+  <button class="family-chip" data-family="leah">Leah</button>
+  <button class="family-chip" data-family="jemma">Jemma</button>
+</div>
+
 <div class="filters">
   <div class="filter-group">
     <span class="filter-label">Dancer</span>
@@ -450,6 +500,12 @@
 
   const weekendLabels = { w1: "Weekend 1 · 7–8 March", w2: "Weekend 2 · 14–15 March", w3: "Weekend 3 · 21–22 March" };
 
+  const families = {
+    leah:  ["aubree", "nelly", "winnie"],
+    jemma: ["hallie", "ryleigh"],
+  };
+
+  let activeFamily = "all";
   let activeDancer = "all";
   let activeScope  = "all";
 
@@ -535,9 +591,10 @@
     let totalVisible = 0, aCount = 0, nCount = 0, wCount = 0, hCount = 0, rCount = 0;
 
     for (const e of entries) {
+      const matchFamily  = activeFamily === "all" || families[activeFamily].includes(e.dataset.dancer);
       const matchDancer  = activeDancer === "all" || e.dataset.dancer === activeDancer;
       const matchWeekend = activeScope  === "all" || e.dataset.weekend === activeScope;
-      const visible = matchDancer && matchWeekend;
+      const visible = matchFamily && matchDancer && matchWeekend;
       e.classList.toggle("hidden", !visible);
       if (visible) {
         totalVisible++;
@@ -571,6 +628,28 @@
 
     empty.classList.toggle("visible", totalVisible === 0);
   }
+
+  // Family chips
+  document.getElementById("family-chips").addEventListener("click", e => {
+    const chip = e.target.closest(".family-chip");
+    if (!chip) return;
+    document.querySelectorAll("#family-chips .family-chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    activeFamily = chip.dataset.family;
+
+    // Reset dancer filter and dim chips that don't belong to this family
+    const dancerChips = document.querySelectorAll("#dancer-chips .chip");
+    dancerChips.forEach(c => {
+      c.classList.remove("active", "dimmed");
+      if (activeFamily !== "all" && c.dataset.dancer !== "all" && !families[activeFamily].includes(c.dataset.dancer)) {
+        c.classList.add("dimmed");
+      }
+    });
+    dancerChips[0].classList.add("active"); // reset to "All"
+    activeDancer = "all";
+
+    applyFilter();
+  });
 
   // Dancer chips
   document.getElementById("dancer-chips").addEventListener("click", e => {
