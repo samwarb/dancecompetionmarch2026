@@ -1,0 +1,266 @@
+App Audit Report
+=================
+
+EXECUTIVE SUMMARY
+------------------
+This is a well-crafted single-file static web app for tracking a children's dance competition schedule. It's lightweight, loads fast, and has a polished dark UI with clever filtering. However, it has significant accessibility gaps that prevent keyboard and screen reader users from operating it, a colour contrast issue that makes text hard to read, and some privacy concerns around publicly listing children's names, times, and family groups. The code is clean and well-structured for its size, but has some maintainability issues that will become painful as the schedule grows.
+
+QUICK STATS
+------------
+Total issues found: 35
+Critical issues: 3
+Frontend issues: 16
+Backend/Security issues: 7
+Code quality issues: 12
+
+
+================================================================================
+FRONTEND REPORT
+================================================================================
+
+[CRITICAL] Inaccessible Day Headers
+What it is: The day header (expand/collapse control) is a <div> with cursor: pointer -- it cannot be reached or activated with a keyboard.
+Why it matters: Keyboard-only users and screen reader users cannot expand/collapse days to see performances.
+How to fix it: Add role="button", tabindex="0", aria-expanded="true/false", and a keydown listener for Enter/Space to each .day-header.
+
+[CRITICAL] Insufficient Colour Contrast on Muted Text
+What it is: The muted text colour (#666) on dark backgrounds (#0d0d0d / #161616) has a contrast ratio of ~3.5:1, below the 4.5:1 WCAG AA minimum.
+Why it matters: People with low vision cannot read filter labels, times, stat labels, day counts, or legend text.
+How to fix it: Change --muted to #888 or #999 to achieve 4.5:1+ contrast.
+
+[CRITICAL] No Visible Focus Styles
+What it is: No custom :focus-visible styles exist for any interactive elements.
+Why it matters: Keyboard users cannot see which button or control they're currently on -- the default browser focus ring is nearly invisible on dark backgrounds.
+How to fix it: Add :focus-visible { outline: 2px solid #fff; outline-offset: 2px; } to all interactive elements.
+
+[IMPORTANT] No aria-pressed on Filter Chips
+What it is: Filter buttons have no aria-pressed attribute to communicate their toggle state.
+Why it matters: Screen reader users hear "All" repeated multiple times but can't tell which filter is currently active.
+How to fix it: Set aria-pressed="true" on active chips and "false" on inactive ones, updating in the click handlers.
+
+[IMPORTANT] No Semantic Heading Hierarchy
+What it is: No semantic heading hierarchy -- weekend and day titles use <div> and <span> instead of <h2> / <h3>.
+Why it matters: Screen readers can't build a page outline or let users jump between sections.
+How to fix it: Make weekend titles <h2> and day names <h3>.
+
+[IMPORTANT] No Landmark Regions
+What it is: No landmark regions (<main>, <nav>, <footer>) -- the page is all <div> elements.
+Why it matters: Screen reader users can't quickly jump to the filters, content, or legend.
+How to fix it: Wrap content in <main>, filters in <nav aria-label="Filters">, legend in <footer>.
+
+[IMPORTANT] Dimmed Chips Still Keyboard-Focusable
+What it is: Dimmed chips remain keyboard-focusable and can be activated via Enter/Space.
+Why it matters: Keyboard users can activate a disabled filter, creating a broken filter state.
+How to fix it: Set disabled attribute and tabindex="-1" on dimmed chips; add a guard in the click handler.
+
+[IMPORTANT] Filter Labels Not Linked to Button Groups
+What it is: Filter labels ("Dancer", "Weekend") aren't programmatically linked to their button groups.
+Why it matters: Screen readers announce buttons without context -- users hear "All" with no idea what it refers to.
+How to fix it: Use role="group" with aria-labelledby pointing to the label, or use <fieldset> / <legend>.
+
+[IMPORTANT] Empty State Not Announced
+What it is: The "No performances match" empty state has no role="status" or aria-live attribute.
+Why it matters: Screen reader users get no feedback when a filter produces zero results.
+How to fix it: Add role="status" and aria-live="polite" to the #empty div.
+
+[IMPORTANT] No Skip-to-Content Link
+What it is: No skip-to-content link -- keyboard users must tab through 13+ filter buttons to reach the schedule.
+Why it matters: Tedious for anyone navigating by keyboard.
+How to fix it: Add a visually-hidden "Skip to schedule" link at the top that shows on focus.
+
+[IMPORTANT] Missing Meta Description and Open Graph Tags
+What it is: No <meta name="description">, no Open Graph tags, no favicon.
+Why it matters: Link previews in iMessage/Slack/social media are blank; no icon in browser tabs.
+How to fix it: Add description meta tag, og:title/og:description, and a favicon.
+
+[IMPORTANT] Incomplete Mobile Responsiveness
+What it is: The mobile media query only adjusts filter labels -- it doesn't address the stats bar, entry layout, or legend at small sizes.
+Why it matters: On small phones, entry rows can become cramped and stats may overlap.
+How to fix it: Add responsive rules to stack entry rows vertically and wrap stats into a grid on narrow screens.
+
+[IMPORTANT] No Print Stylesheet
+What it is: No print stylesheet exists.
+Why it matters: Printing the schedule wastes ink (dark background), includes filter chips, and may break layout.
+How to fix it: Add @media print rules: white background, hide filters, expand all sections.
+
+[NICE TO HAVE] Inline Styles for Stat and Legend Colours
+What it is: Inline styles used for stat value colours and legend dot colours instead of CSS classes.
+Why it matters: Harder to maintain; can't be overridden by media queries without !important.
+How to fix it: Create CSS classes like .stat-aubree { color: var(--aubree); }.
+
+[NICE TO HAVE] Dead CSS for "group" Dancer
+What it is: The --group CSS variable and [data-dancer="group"] rules exist but no schedule entries use dancer: "group" -- this is dead CSS.
+Why it matters: Confusing for maintainers; dead code adds noise.
+How to fix it: Remove the unused rules, or add group entries if they're planned.
+
+[NICE TO HAVE] No Theme Colour Meta Tag
+What it is: No <meta name="theme-color"> tag for mobile browser toolbar colouring.
+Why it matters: Mobile browsers show a mismatched toolbar colour against the dark page.
+How to fix it: Add <meta name="theme-color" content="#0d0d0d">.
+
+
+================================================================================
+BACKEND / SECURITY REPORT
+================================================================================
+
+Note: This is a purely static HTML app hosted on GitHub Pages. There is no server-side code, database, API, or authentication.
+
+[IMPORTANT] Children's PII Publicly Accessible
+What it is: Children's names, family groupings, specific performance times, and dates are in publicly accessible source code.
+Why it matters: This is personally identifiable information about minors. Combined with competition dates, it reveals where specific children will be at specific times.
+How to fix it: Make the GitHub repo private. Add <meta name="robots" content="noindex, nofollow"> and a robots.txt with Disallow: /.
+
+[IMPORTANT] innerHTML Used Without Sanitisation
+What it is: innerHTML is used to render schedule data without sanitisation.
+Why it matters: Currently safe (data is hardcoded), but if data ever comes from an external source, this is a direct XSS vector. It's one refactor away from being exploitable.
+How to fix it: Replace innerHTML with document.createElement() + textContent.
+
+[IMPORTANT] No Content Security Policy
+What it is: No Content Security Policy (CSP) header or meta tag.
+Why it matters: No secondary defence against XSS -- if a vulnerability is introduced, there's nothing limiting what malicious code could do.
+How to fix it: Add a <meta http-equiv="Content-Security-Policy"> tag. Move inline CSS/JS to external files to enable strict CSP.
+
+[IMPORTANT] No Search Engine Blocking
+What it is: No robots.txt or sitemap.xml -- the site is fully indexable by search engines.
+Why it matters: Search engines can index children's names and schedules, making them discoverable by anyone.
+How to fix it: Add robots.txt with Disallow: / and a noindex meta tag.
+
+[NICE TO HAVE] No Error Monitoring
+What it is: No error monitoring or logging -- JavaScript failures produce a blank page with no feedback.
+Why it matters: If the app breaks on someone's phone, nobody knows about it.
+How to fix it: Add a global error handler (window.addEventListener('error', ...)) with a user-visible fallback message.
+
+[NICE TO HAVE] No Noscript Fallback
+What it is: No <noscript> fallback -- if JavaScript is disabled, users see an empty page.
+Why it matters: Users with JS disabled or failed script loads see nothing and get no explanation.
+How to fix it: Add a <noscript> message inside the content div.
+
+[NICE TO HAVE] No Custom HTTP Security Headers
+What it is: GitHub Pages does not allow custom HTTP security headers (X-Frame-Options, HSTS, X-Content-Type-Options).
+Why it matters: The site lacks clickjacking and MIME-sniffing protections.
+How to fix it: Deploy behind Cloudflare (free tier) to add custom headers, or use meta tag equivalents where possible.
+
+
+================================================================================
+CODE QUALITY REPORT
+================================================================================
+
+[IMPORTANT] Everything in One File
+What it is: The entire app (370 lines CSS + 225 lines JS + HTML) lives in one file.
+Why it matters: As the schedule grows, the file becomes hard to navigate. Two people can't work on CSS and JS simultaneously without merge conflicts.
+How to fix it: Extract CSS into styles.css and JS into app.js.
+
+[IMPORTANT] Hardcoded Schedule Data
+What it is: The schedule data is hardcoded in JavaScript (50 lines of data mixed with app logic).
+Why it matters: A non-technical user can't safely update the schedule without risking breaking the app. A missing comma breaks everything silently.
+How to fix it: Move data to schedule.json and load it with fetch().
+
+[IMPORTANT] Repetitive Per-Dancer Counter Logic
+What it is: Five separate counter variables and five if statements in applyFilter() do the same thing for each dancer.
+Why it matters: Adding a sixth dancer means changing three separate places in the code.
+How to fix it: Use an object-based counting approach: const counts = {}; dancers.forEach(d => counts[d] = 0);
+
+[IMPORTANT] No Family-Schedule Validation
+What it is: No validation that every dancer in the schedule appears in the families mapping.
+Why it matters: A dancer added to the schedule but not to families silently disappears when the family filter is active.
+How to fix it: Add startup validation that checks all schedule dancers appear in a family.
+
+[IMPORTANT] No Documentation
+What it is: Zero comments in the JavaScript; no README or deployment documentation.
+Why it matters: A new contributor (or the original author returning later) has no guide to the filter logic, data format, or deployment process.
+How to fix it: Add a comment block explaining the data structure and filter model. Add a README with instructions for adding performances and deploying.
+
+[IMPORTANT] No URL State / Deep Linking
+What it is: Filter state isn't synced to the URL -- refreshing or sharing the link always resets to "All".
+Why it matters: A parent can't bookmark or share a link showing only their child's schedule.
+How to fix it: Sync filter state to URL hash (e.g., #family=leah&dancer=aubree). Read hash on page load.
+
+[IMPORTANT] No Error Handling on Build
+What it is: No error handling around buildUI() -- a malformed schedule entry blanks the entire page.
+Why it matters: A typo in the data array crashes the app with no user feedback.
+How to fix it: Wrap buildUI() in try/catch that shows an error message in the content area.
+
+[NICE TO HAVE] Duplicate Chip Handler Logic
+What it is: Three chip click handlers repeat the same toggle pattern (remove active from siblings, add to clicked, update state, call filter).
+Why it matters: Any behaviour change to chip toggling must be applied in three places.
+How to fix it: Extract a reusable setupChipFilter() function.
+
+[NICE TO HAVE] Repetitive Per-Dancer CSS
+What it is: Repetitive per-dancer CSS rules appear in three separate places (15+ rules following the same pattern).
+Why it matters: Adding a dancer means adding rules in three CSS blocks -- easy to miss one.
+How to fix it: Use CSS custom properties set inline per element (--dancer-color) with a single rule.
+
+[NICE TO HAVE] Repository Name Typo
+What it is: The repository folder is named "dancecompetionmarch2026" -- "competition" is misspelled.
+Why it matters: If this is the GitHub Pages URL, the typo appears in every shared link.
+How to fix it: Rename the repository and set up a redirect.
+
+[NICE TO HAVE] Unexplained _config.yml
+What it is: _config.yml contains only theme: null with no comment explaining why it exists.
+Why it matters: Someone might delete it, causing GitHub Pages to apply an unwanted theme.
+How to fix it: Add a comment: # Prevents GitHub Pages from applying a default Jekyll theme.
+
+[NICE TO HAVE] Inline Capitalize Logic
+What it is: Inline capitalize logic is buried inside a template literal.
+Why it matters: Hard to find if name display needs to change later.
+How to fix it: Extract a capitalize() utility function.
+
+
+================================================================================
+RECOMMENDED FIX ORDER
+================================================================================
+
+1. Make the day headers keyboard-accessible
+   This is the most severe usability bug. Without it, keyboard and screen reader users literally cannot see any performances. Add role="button", tabindex, aria-expanded, and keyboard event handling.
+
+2. Fix colour contrast on muted text
+   Every label, time, and helper text on the page fails accessibility standards. Change --muted from #666 to #888 or #999. One line change, massive impact.
+
+3. Add visible focus styles
+   Without these, keyboard users are flying blind. Add :focus-visible outlines to all interactive elements.
+
+4. Add privacy protections
+   Children's PII is publicly indexable. Add noindex meta tag and robots.txt. Consider making the repo private.
+
+5. Add aria-pressed to filter chips
+   Screen reader users can't tell which filter is active. Small code change, big accessibility win.
+
+6. Fix dimmed chip keyboard interaction
+   Dimmed chips are focusable and activatable via keyboard, creating broken states. Add disabled attribute and guard in handler.
+
+7. Add semantic heading structure
+   Change weekend/day titles to <h2>/<h3> for screen reader navigation. Minimal effort, significant accessibility improvement.
+
+8. Add landmark regions
+   Wrap content in <main>, filters in <nav>. Quick structural change that helps all assistive technology users.
+
+9. Extract schedule data to JSON
+   Makes updates safer (no risk of breaking JS syntax), enables non-developers to edit, and separates concerns.
+
+10. Add URL hash state for filters
+    Lets parents bookmark and share links to their child's schedule. High-value feature for the actual users of this app.
+
+
+================================================================================
+WHAT'S WORKING WELL
+================================================================================
+
+- Excellent CSS custom property system -- Dancer colours are defined once in :root and reused everywhere. Changing a colour is a one-line edit.
+
+- Clean, consistent data model -- Every schedule entry follows the same object shape with clear key names. No variation or inconsistency.
+
+- Event delegation on filter chips -- Uses a single listener on the parent container rather than one per button. Best practice for performance and memory.
+
+- Beautiful dark theme with clear visual hierarchy -- Three-tier surface system (--bg, --surface, --surface2) creates depth without clutter. Dancer colours pop against the dark background.
+
+- Smart multi-level filtering -- Family to dancer to weekend filter chain interacts cleanly. Selecting a family correctly dims irrelevant dancer chips and resets the dancer filter.
+
+- Zero external dependencies -- No CDN scripts, no libraries, no build tools. Loads instantly and works offline. Perfectly appropriate for this scale.
+
+- Responsive flex-wrap design -- Filter chips and stats wrap naturally on smaller screens.
+
+- Live stats bar -- Performance counts update immediately when filters change, with per-dancer counts in matching colours.
+
+- Collapsible day sections with visual indicators -- Coloured dots show which dancers perform each day at a glance.
+
+- Tabular-nums on times -- A nice typographic touch that keeps time columns perfectly aligned.
